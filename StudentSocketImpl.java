@@ -37,6 +37,8 @@ class StudentSocketImpl extends BaseSocketImpl {
    * @param p The packet that arrived
    */
   public synchronized void receivePacket(TCPPacket p){
+	  //called by Demultiplexer when a packet arrives for this connection. You must have registered with the
+	  //  Demultiplexer first.
   }
   
   /** 
@@ -47,6 +49,9 @@ class StudentSocketImpl extends BaseSocketImpl {
    * Note that localport is already set prior to this being called.
    */
   public synchronized void acceptConnection() throws IOException {
+	  //Waits for an incoming connection to arrive to connect this socket to. Ultimately this is called by the
+	  //  application calling ServerSocket.accept(), but this method belongs to the Socket object that will be
+	  //  returned, not the listening ServerSocket.
   }
 
   
@@ -88,6 +93,7 @@ class StudentSocketImpl extends BaseSocketImpl {
    * @exception  IOException  if an I/O error occurs when closing this socket.
    */
   public synchronized void close() throws IOException {
+	  //close the connection. called by the application
   }
 
   /** 
@@ -96,6 +102,8 @@ class StudentSocketImpl extends BaseSocketImpl {
    * @param ref generic reference to be returned to handleTimer
    */
   private TCPTimerTask createTimerTask(long delay, Object ref){
+	  //handle timer event, called by TCPTimerTask. ref is a generic pointer that you can use to pass data back
+	  //  to this routine when the timer expires. (hint, could be a TCPPacket)
     if(tcpTimer == null)
       tcpTimer = new Timer(false);
     return new TCPTimerTask(tcpTimer, delay, this, ref);
