@@ -30,6 +30,10 @@ class StudentSocketImpl extends BaseSocketImpl {
 	//Initialize state, register this socket with demultiplexer, 
 	//  and send syn packet to waiting server
 	localport = D.getNextAvailablePort();
+	D.registerConnection(address, localport, port, this);
+	
+	TCPPacket synpack = new TCPPacket(localport, port, 0, 0, false, true, false, port, null);
+	TCPWrapper.send(synpack, address);
   }
   
   /**
@@ -39,6 +43,8 @@ class StudentSocketImpl extends BaseSocketImpl {
   public synchronized void receivePacket(TCPPacket p){
 	  //called by Demultiplexer when a packet arrives for this connection. You must have registered with the
 	  //  Demultiplexer first.
+	  
+	  System.out.println(p);
   }
   
   /** 
