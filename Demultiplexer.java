@@ -116,7 +116,10 @@ class Demultiplexer extends Thread {
         } catch (IOException e) {
             System.out.println("EXCEPTION RECEIVED: \n"+e);
             System.exit(1);
-        }
+        } catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
     
     }
 
@@ -129,7 +132,7 @@ class Demultiplexer extends Thread {
     // StudentSocketImpl.receivePacket() method has returned.  in other
     // words, this function will not return until the packet has been
     // processed completely.
-    public void demultiplex(TCPPacket packet) {
+    public void demultiplex(TCPPacket packet) throws InterruptedException {
 
         // remember, when receiving, destPort is the localPort.
         String hashString = getHashTableKey(packet.sourceAddr,packet.destPort,

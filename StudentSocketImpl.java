@@ -4,16 +4,18 @@ import java.util.Timer;
 
 class StudentSocketImpl extends BaseSocketImpl {
 	// SocketImpl data members:
-	//   protected InetAddress address;
-	//   protected int port;
-	//   protected int localport;
+	   protected InetAddress address;
+	   protected int port;
+	   protected int localport;
 
   private Demultiplexer D;
   private Timer tcpTimer;
+  private String state = "CLOSED";
 
 
   StudentSocketImpl(Demultiplexer D) {  // default constructor
     this.D = D;
+    System.out.println(state);
   }
 
   /**
@@ -28,6 +30,9 @@ class StudentSocketImpl extends BaseSocketImpl {
     //Called for an active open (client) to connect to address:port
 	//Initialize state, register this socket with demultiplexer, 
 	//  and send syn packet to waiting server
+	  
+	state = "LISTEN";
+	System.out.println(state);
 	localport = D.getNextAvailablePort();
 	this.address = address;
 	this.port = port;
@@ -40,31 +45,59 @@ class StudentSocketImpl extends BaseSocketImpl {
   
   /**
    * Called by Demultiplexer when a packet comes in for this connection
-   * @param p The packet that arrived
+   * @param p The packet that arrived 
    */
-  public synchronized void receivePacket(TCPPacket p){
+  public synchronized void receivePacket(TCPPacket p) throws InterruptedException{
 	  //called by Demultiplexer when a packet arrives for this connection. You must have registered with the
 	  //  Demultiplexer first.
 	  TCPPacket returnpack = null;
+	  address = p.sourceAddr;
 	  localport = p.destPort;
 	  port = p.sourcePort;
 	  
 	  this.notifyAll();
 	  
 	  try {
-		  if (p.synFlag && !p.ackFlag){
+		  if (p.synFlag && p.ackFlag){ 
+			  state = "ESTABLISHED";
+			  returnpack = new TCPPacket(localport, port, p.ackNum, (p.seqNum + 1), true, false, false, 30, null);
+			  TCPWrapper.send(returnpack, address);
+			  System.out.println(state);
+			  
+		  }
+		  else if (p.synFlag){
+			  state = "SYN_RECIEVED";
 			  D.unregisterListeningSocket(p.destPort, this);
 			  D.registerConnection(p.sourceAddr, localport, port, this);
 			  
-			  returnpack = new TCPPacket(localport, port, 0, 1, true, true, false, 30, null);
-			  TCPWrapper.send(returnpack, p.sourceAddr);
+			  returnpack = new TCPPacket(localport, port, p.ackNum, (p.seqNum + 1), true, true, false, 30, null);
+			  TCPWrapper.send(returnpack, address);
+			  System.out.println(state);
 			  
 		  }
 		  else if (p.ackFlag){
-			  returnpack = new TCPPacket(localport, port, 1, 2, false, false, false, 30, null);
-			  TCPWrapper.send(returnpack, p.sourceAddr);
+			  if (state == "LAST_ACK" || state == "FIN_WAIT_2"){
+				  state = "TIME_WAIT";
+				  
+			  }
+			  else {
+				  state = "ESTABLISHED";
+			  }
+			  System.out.println(state);
+		  }
+		  else if (p.finFlag){ 
+			  if (state == "ESTABLISHED"){
+				  state = "CLOSE_WAIT";
+			  }
+			  else {
+				  state = "FIN_WAIT_2";
+			  }
+			  returnpack = new TCPPacket(localport, port, p.ackNum, (p.seqNum + 1), true, false, false, 30, null);
+			  TCPWrapper.send(returnpack, address);
+			  System.out.println(state);
 		  }
 		  
+
 	  } catch (IOException e) {
 		  System.out.println("EXCEPTION RECEIVED: \n"+e);
           System.exit(1);
@@ -126,6 +159,16 @@ class StudentSocketImpl extends BaseSocketImpl {
    */
   public synchronized void close() throws IOException {
 	  //close the connection. called by the application
+	  
+	  TCPPacket p = new TCPPacket(localport, port, -1, -1, false, false, true, 30, null); 
+	  if (state == "ESTABLISHED"){
+		  state = "FIN_WAIT_1";
+	  }
+	  else {
+		  state = "LAST_ACK";
+	  }
+	  System.out.println(state);
+	  TCPWrapper.send(p, address);
   }
 
   /** 
