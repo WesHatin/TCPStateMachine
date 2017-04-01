@@ -3,11 +3,10 @@ import java.io.*;
 import java.util.Timer;
 
 class StudentSocketImpl extends BaseSocketImpl {
-
-  // SocketImpl data members:
-  //   protected InetAddress address;
-  //   protected int port;
-  //   protected int localport;
+	// SocketImpl data members:
+	//   protected InetAddress address;
+	//   protected int port;
+	//   protected int localport;
 
   private Demultiplexer D;
   private Timer tcpTimer;
@@ -46,8 +45,30 @@ class StudentSocketImpl extends BaseSocketImpl {
   public synchronized void receivePacket(TCPPacket p){
 	  //called by Demultiplexer when a packet arrives for this connection. You must have registered with the
 	  //  Demultiplexer first.
+	  TCPPacket returnpack = null;
+	  localport = p.destPort;
+	  port = p.sourcePort;
 	  
-	  System.out.println(p);
+	  this.notifyAll();
+	  
+	  try {
+		  if (p.synFlag && !p.ackFlag){
+			  D.unregisterListeningSocket(p.destPort, this);
+			  D.registerConnection(p.sourceAddr, localport, port, this);
+			  
+			  returnpack = new TCPPacket(localport, port, 0, 1, true, true, false, 30, null);
+			  TCPWrapper.send(returnpack, p.sourceAddr);
+			  
+		  }
+		  else if (p.ackFlag){
+			  returnpack = new TCPPacket(localport, port, 1, 2, false, false, false, 30, null);
+			  TCPWrapper.send(returnpack, p.sourceAddr);
+		  }
+		  
+	  } catch (IOException e) {
+		  System.out.println("EXCEPTION RECEIVED: \n"+e);
+          System.exit(1);
+		}
   }
   
   /** 
