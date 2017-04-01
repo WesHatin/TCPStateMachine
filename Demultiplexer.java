@@ -59,12 +59,12 @@ class Demultiplexer extends Thread {
 
     // Hashtable provides an easy way to identify unique connections.
     // will be filled with StudentSocketImpl objects.
-    private Hashtable connectionTable;
+    private Hashtable<String, StudentSocketImpl> connectionTable;
 
     // need a second table for connections that are listening for a
     // connect() attempt.
     // will be filled with StudentSocketImpl objects.
-    private Hashtable listeningTable;
+    private Hashtable<String, StudentSocketImpl> listeningTable;
 
 
     // constructor, of course
@@ -73,8 +73,8 @@ class Demultiplexer extends Thread {
         this.setDaemon(true);
         nextAvailablePortNumber = 12345; // as long as its a high port number
         portForUDP = portNum; // will listen on this port number
-        connectionTable = new Hashtable();
-        listeningTable = new Hashtable();
+        connectionTable = new Hashtable<String, StudentSocketImpl>();
+        listeningTable = new Hashtable<String, StudentSocketImpl>();
     }
 
 
