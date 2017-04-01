@@ -30,9 +30,12 @@ class StudentSocketImpl extends BaseSocketImpl {
 	//Initialize state, register this socket with demultiplexer, 
 	//  and send syn packet to waiting server
 	localport = D.getNextAvailablePort();
+	this.address = address;
+	this.port = port;
+	
 	D.registerConnection(address, localport, port, this);
 	
-	TCPPacket synpack = new TCPPacket(localport, port, 0, 0, false, true, false, port, null);
+	TCPPacket synpack = new TCPPacket(localport, port, 0, 0, false, true, false, 20, null);
 	TCPWrapper.send(synpack, address);
   }
   
@@ -58,6 +61,8 @@ class StudentSocketImpl extends BaseSocketImpl {
 	  //Waits for an incoming connection to arrive to connect this socket to. Ultimately this is called by the
 	  //  application calling ServerSocket.accept(), but this method belongs to the Socket object that will be
 	  //  returned, not the listening ServerSocket.
+	  
+	  D.registerListeningSocket(this.getLocalPort(), this);
   }
 
   
