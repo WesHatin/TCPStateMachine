@@ -10,12 +10,11 @@ class StudentSocketImpl extends BaseSocketImpl {
 
   private Demultiplexer D;
   private Timer tcpTimer;
-  private String state = "CLOSED";
+  private String state;
 
 
   StudentSocketImpl(Demultiplexer D) {  // default constructor
     this.D = D;
-    System.out.println(state);
   }
 
   /**
@@ -31,7 +30,7 @@ class StudentSocketImpl extends BaseSocketImpl {
 	//Initialize state, register this socket with demultiplexer, 
 	//  and send syn packet to waiting server
 	  
-	state = "LISTEN";
+	state = "SYS_SENT";
 	System.out.println(state);
 	localport = D.getNextAvailablePort();
 	this.address = address;
@@ -89,10 +88,11 @@ class StudentSocketImpl extends BaseSocketImpl {
 			  if (state == "ESTABLISHED"){
 				  state = "CLOSE_WAIT";
 			  }
-			  else {
+			  else if (state == "FIN_WAIT_1"){
 				  state = "FIN_WAIT_2";
 			  }
 			  returnpack = new TCPPacket(localport, port, p.ackNum, (p.seqNum + 1), true, false, false, 30, null);
+			  
 			  TCPWrapper.send(returnpack, address);
 			  System.out.println(state);
 		  }
@@ -117,6 +117,8 @@ class StudentSocketImpl extends BaseSocketImpl {
 	  //  returned, not the listening ServerSocket.
 	  
 	  D.registerListeningSocket(this.getLocalPort(), this);
+	  state = "LISTEN";
+	  System.out.println(state);
   }
 
   
@@ -159,15 +161,15 @@ class StudentSocketImpl extends BaseSocketImpl {
    */
   public synchronized void close() throws IOException {
 	  //close the connection. called by the application
-	  
+
 	  TCPPacket p = new TCPPacket(localport, port, -1, -1, false, false, true, 30, null); 
 	  if (state == "ESTABLISHED"){
 		  state = "FIN_WAIT_1";
 	  }
-	  else {
+	  else if (state == "CLOSE_WAIT"){
 		  state = "LAST_ACK";
 	  }
-	  System.out.println(state);
+
 	  TCPWrapper.send(p, address);
   }
 
